@@ -299,7 +299,7 @@ def main():
     #list = quantize(imgRGB,10, 20)
     #plt.imshow(list[0].clip(0,1))
     hist_orig, hist_eq, im_eq = histogram_equalize(imgRGB)
-    im_eq = np.clip(im_eq ,0,1)
+    im_eq = np.clip(im_eq,0,1)
     plt.imshow(im_eq)
     plt.plot(hist_eq)
     plt.show()
