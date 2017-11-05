@@ -218,6 +218,7 @@ def error_calculation(n_quant ,z, q, hist_orig, bins):
         sum_err += (np.power((q[index] - bins_seg), 2) * hist_seg).sum()
     return sum_err
 
+
 def get_lookup_table(n_quant, z, q):
     '''
     form a lookup table
@@ -226,6 +227,7 @@ def get_lookup_table(n_quant, z, q):
     :param q: the gray scale values
     :return: A lookup table
     '''
+
     lut = np.arange(256)
     # form a lookup table
     for i in range(n_quant):
