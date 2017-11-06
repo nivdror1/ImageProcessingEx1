@@ -81,7 +81,7 @@ def get_hist_orig(im_gray,flag):
         gray_channel = np.asarray(im_gray[:, :, 0]).flatten()
     else:
         gray_channel = np.asarray(im_gray).flatten()
-    hist_orig, bins = np.histogram(gray_channel, 256, [0, 256])
+    hist_orig, bins = np.histogram(gray_channel, 256)
     return hist_orig, bins
 
 
@@ -99,7 +99,7 @@ def equalize_image(hist_orig, im_gray, bins):
 
     im_eq = np.interp(im_gray.flatten(),bins[:-1],cumulative_hist)
     im_eq = im_eq.reshape(im_gray.shape)
-    hist_eq, bins = np.histogram(im_eq,256,[0,256])
+    hist_eq, bins = np.histogram(im_eq.flatten(),256)
     return hist_eq, im_eq
 
 def histogram_equalize_rgb(im_orig):
@@ -127,7 +127,7 @@ def histogram_equalize_rgb(im_orig):
 
 def histogram_equalize_gray(im_orig):
     '''
-    0Perform the histogram equalization algorithm for gray scale image
+    Perform the histogram equalization algorithm for gray scale image
     :param im_orig: The origin image..
     :return: hist_orig,hist_eq_im_eq
     '''
@@ -148,12 +148,10 @@ def histogram_equalize(im_orig):
     :return: Return the histogram of the origin image and of the equalized image,
             in addition return the equalized image
     '''
-    if len(im_orig.shape) == 3:
-        hist_orig, hist_eq, im_eq = histogram_equalize_rgb(im_orig)
+    if len(im_orig.shape) >= 3:
+        hist_orig, hist_eq, im_eq = histogram_equalize_rgb(im_orig[:, :,0:3])
     else:
         hist_orig, hist_eq, im_eq = histogram_equalize_gray(im_orig)
-    #plt.imshow(im_eq, cmap= plt.cm.gray)
-
     return hist_orig, hist_eq, im_eq
 
 
@@ -187,11 +185,11 @@ def calculate_q(n_quant, q, z, hist_orig, bins):
         bins_seg = np.asarray(bins[z[segment]: z[segment + 1]])
         #calculate the q parameter
         segment_cdf = hist_seg.cumsum()
-        q[segment] = ((bins_seg * hist_seg).sum())/ (segment_cdf[-1])
+        q[segment] = np.divide((bins_seg * hist_seg).sum(), (segment_cdf[-1]))
     return q
 
 
-def error_calculation(n_quant,z, q, hist_orig, bins):
+def error_calculation(n_quant, z, q, hist_orig, bins):
     '''
     calculate the error per each iteration
     :param n_quant: the number of color in the new image
@@ -236,9 +234,10 @@ def quantize(im_orig, n_quant, n_iter):
     :param n_iter: number of iterations until convergence
     :return: the new image and a list of error for each iteration
     '''
-    im_yiq = im_orig
-    if len(im_orig.shape) == 3:
-        im_yiq = rgb2yiq(im_orig)
+
+    im_yiq = im_orig[:, :, 0:3]
+    if len(im_orig.shape) >= 3:
+        im_yiq = rgb2yiq(im_orig[:, :, 0:3])
         gray_channel = im_yiq[:, :, 0]
         hist_orig, bins = get_hist_orig(im_yiq, True)
     else:
@@ -258,9 +257,9 @@ def quantize(im_orig, n_quant, n_iter):
         q = calculate_q(n_quant, q, z, hist_orig, bins)
 
         #z calculation
+        rounded_q = q.round()
         for interval in range(1, n_quant):
-
-            z[interval] = (q[interval - 1] + q[interval])/2
+            z[interval] = np.divide((rounded_q[interval - 1] + rounded_q[interval]), 2).round()
 
         #error calucation
         error.append(error_calculation(n_quant,z ,q.round() ,hist_orig, bins))
@@ -274,13 +273,11 @@ def quantize(im_orig, n_quant, n_iter):
     #form a lookup table
     lut = get_lookup_table(n_quant, z, q.round())
 
-
     #update the image
     gray_channel = np.asarray(np.multiply(gray_channel, 255)).astype(int)
     im_quant = lut[gray_channel]
     im_quant = np.divide(im_quant,255)
-    plt.plot(error)
-    plt.show()
+
     if len(im_orig.shape) == 3:
         im_yiq[:, :, 0] = im_quant
         im_quant = yiq2rgb(im_yiq)
@@ -289,20 +286,25 @@ def quantize(im_orig, n_quant, n_iter):
 
 
 def main():
-    name1 = "monkey.jpg"
+    name1 = "rgb_orig.png"
     name2 = "logoGray.jpg"
 
     #display_image(name1, 2)
     imgRGB = read_image(name1,2)
     #display_image(name1, 1)
     #imsave("LowGray.jpg",imgRGB)
-    #list = quantize(imgRGB,10, 20)
-    #plt.imshow(list[0].clip(0,1))
-    hist_orig, hist_eq, im_eq = histogram_equalize(imgRGB)
-    im_eq = np.clip(im_eq,0,1)
-    plt.imshow(im_eq)
-    plt.plot(hist_eq)
-    plt.show()
+    imgRGB = imgRGB[:, :, 0:3]
+    list = quantize(imgRGB,3, 20)
+    plt.imshow(list[0].clip(0,1))
+    #hist_orig, hist_eq, im_eq = histogram_equalize(imgRGB)
+    # im_eq = np.clip(im_eq,0,1)
+    # plt.imshow(im_eq)
+    # plt.xlim([0,256])
+    # plt.plot(hist_eq.cumsum())
+    # plt.show()
+
+
+
 
 if __name__ == "__main__":
     main()
