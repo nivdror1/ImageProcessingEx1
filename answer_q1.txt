@@ -1,0 +1,4 @@
+Q1:
+    If a certain segment isn't populated by any pixel then there gonna be a problem in the q calculation
+    since we divide by the number of the pixels in the segment - which is in this case 0.
+    This will lead to a division by zero exception i.e our program gonna crash.
