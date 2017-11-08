@@ -81,7 +81,7 @@ def get_hist_orig(im_gray,flag):
         gray_channel = np.asarray(im_gray[:, :, 0]).flatten()
     else:
         gray_channel = np.asarray(im_gray).flatten()
-    hist_orig, bins = np.histogram(gray_channel, 256)
+    hist_orig, bins = np.histogram(gray_channel, 256,[0,256])
     return hist_orig, bins
 
 
@@ -99,7 +99,7 @@ def equalize_image(hist_orig, im_gray, bins):
 
     im_eq = np.interp(im_gray.flatten(),bins[:-1],cumulative_hist)
     im_eq = im_eq.reshape(im_gray.shape)
-    hist_eq, bins = np.histogram(im_eq.flatten(),256)
+    hist_eq, bins = np.histogram(im_eq.flatten(),256,[0,256])
     return hist_eq, im_eq
 
 def histogram_equalize_rgb(im_orig):
@@ -286,25 +286,10 @@ def quantize(im_orig, n_quant, n_iter):
 
 
 def main():
-    name1 = "rgb_orig.png"
-    name2 = "logoGray.jpg"
+    name1= "jerusalem.jpg"
+    RGB = read_image(name1,2)
+    hist_orig,hist_eq,im_eq = histogram_equalize(RGB)
+    a=4
 
-    #display_image(name1, 2)
-    imgRGB = read_image(name1,2)
-    #display_image(name1, 1)
-    #imsave("LowGray.jpg",imgRGB)
-    imgRGB = imgRGB[:, :, 0:3]
-    list = quantize(imgRGB,3, 20)
-    plt.imshow(list[0].clip(0,1))
-    #hist_orig, hist_eq, im_eq = histogram_equalize(imgRGB)
-    # im_eq = np.clip(im_eq,0,1)
-    # plt.imshow(im_eq)
-    # plt.xlim([0,256])
-    # plt.plot(hist_eq.cumsum())
-    # plt.show()
-
-
-
-
-if __name__ == "__main__":
+if __name__=="__main__":
     main()
