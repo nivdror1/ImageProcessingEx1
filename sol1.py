@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 from scipy.misc import imsave as imsave, imread as imread
 from skimage.color import rgb2gray
 
+GRAY_REPR = 1
+RGB_REPR = 2
+RGB_SHAPE = 3
+NUM_GRAY_COLORS = 255
 # The matrix which is used in rgb2yiq conversion
 mat = np.array([[0.299, 0.587, 0.114], [0.596, -0.275, -0.321], [0.212, -0.523, 0.311]])
 
@@ -16,17 +20,15 @@ def read_image(filename, representation):
     :param representation: gray scale or RGB format to which the image is to be converted
     :return: A image whose values are normalized and in the given representation
     """
-    if( representation < 1 or representation > 2):
+    if( representation < GRAY_REPR or representation > RGB_REPR):
         return -1
-
     #read the image
     img = imread(filename)
 
-    #todo  check if the image is proper/ maybe check if the suffix is jpg,gif and etc
     #convert the RGB image to gray scale image
-    if len(img.shape) == 3 and representation == 1:
+    if len(img.shape) == RGB_SHAPE and representation == RGB_REPR:
         return rgb2gray(img)
-    return np.divide(img.astype(np.float64), 255)
+    return np.divide(img.astype(np.float64), NUM_GRAY_COLORS)
 
 
 def display_image(filename, representation):
@@ -36,13 +38,13 @@ def display_image(filename, representation):
     :param representation: in which format display the image (gray scale pr RGB)
     :return: if fails return -1 otherwise return 0
     """
-    if representation < 1 or representation > 2:
+    if representation < GRAY_REPR or representation > RGB_REPR:
         return -1
     #read and convert the format of the image according to the representation
     img = read_image(filename, representation)
 
     #display the image
-    if representation == 1:
+    if representation == GRAY_REPR:
         plt.imshow(img, cmap = plt.cm.gray)
     else:
         plt.imshow(img)
@@ -75,7 +77,7 @@ def get_hist_orig(im_gray,flag):
     :param flag: true if the origin image is in YIQ format else it's in gray scale
     :return: return the histogram of the origin image
     '''
-    im_gray = (im_gray * 255).round()
+    im_gray = (im_gray * NUM_GRAY_COLORS).round()
 
     if flag:
         gray_channel = np.asarray(im_gray[:, :, 0]).flatten()
@@ -122,7 +124,7 @@ def histogram_equalize_rgb(im_orig):
     # transform to RGB
     im_eq = yiq2rgb(im_yiq)
 
-    return hist_orig, hist_eq, im_eq
+    return im_eq, hist_orig, hist_eq
 
 
 def histogram_equalize_gray(im_orig):
@@ -138,7 +140,7 @@ def histogram_equalize_gray(im_orig):
     hist_eq, im_eq = equalize_image(hist_orig, im_gray, bins)
     # normalize the gray channel
     im_eq = np.divide(im_eq, 255)
-    return hist_orig, hist_eq, im_eq
+    return im_eq, hist_orig, hist_eq
 
 
 def histogram_equalize(im_orig):
@@ -149,10 +151,10 @@ def histogram_equalize(im_orig):
             in addition return the equalized image
     '''
     if len(im_orig.shape) >= 3:
-        hist_orig, hist_eq, im_eq = histogram_equalize_rgb(im_orig[:, :,0:3])
+        im_eq, hist_orig, hist_eq= histogram_equalize_rgb(im_orig[:, :,0:3])
     else:
-        hist_orig, hist_eq, im_eq = histogram_equalize_gray(im_orig)
-    return hist_orig, hist_eq, im_eq
+        im_eq, hist_orig, hist_eq= histogram_equalize_gray(im_orig)
+    return im_eq, hist_orig, hist_eq  #todo add clip
 
 
 def restart_z( n_quant, hist_orig):
@@ -235,7 +237,7 @@ def quantize(im_orig, n_quant, n_iter):
     :return: the new image and a list of error for each iteration
     '''
 
-    im_yiq = im_orig[:, :, 0:3]
+    im_yiq = im_orig
     if len(im_orig.shape) >= 3:
         im_yiq = rgb2yiq(im_orig[:, :, 0:3])
         gray_channel = im_yiq[:, :, 0]
@@ -282,13 +284,13 @@ def quantize(im_orig, n_quant, n_iter):
         im_yiq[:, :, 0] = im_quant
         im_quant = yiq2rgb(im_yiq)
 
-    return [im_quant, error]
+    return im_quant, error
 
 
 def main():
     name1= "jerusalem.jpg"
     RGB = read_image(name1,2)
-    hist_orig,hist_eq,im_eq = histogram_equalize(RGB)
+    im_eq, hist_orig,hist_eq = histogram_equalize(RGB)
     a=4
 
 if __name__=="__main__":
